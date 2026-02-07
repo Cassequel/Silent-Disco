@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Streams</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="gsap.min.js"></script>
+</head>
+<body>
+    <div class="desktop-warning">
+        <div>
+            <h1>📱 Mobile Only</h1>
+            <p>Please open this page on a mobile device or resize your browser window.</p>
+        </div>
+    </div>
+
+    <div class="mobile-content">
+        <button class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <div class="overlay" id="overlay"></div>
+
+        <div class="menu" id="menu">
+            <h2>Choose a Stream</h2>
+            <button class="color-btn-1" id="btn-track1" onclick="playStream('track1', '#008cff', this)">Stream 1</button>
+            <button class="color-btn-2" id="btn-track2" onclick="playStream('track2', '#ff0000', this)">Stream 2</button>
+            <button class="color-btn-3" id="btn-track3" onclick="playStream('track3', '#07da00', this)">Stream 3</button>
+            <button class="color-btn-4" id="btn-track4" onclick="playStream('track4', '#ffe600', this)">Stream 4</button>
+            <button class="color-btn-5" id="btn-track4" onclick="playStream('track5', '#ff00ff', this)">Stream 5</button>
+        </div>
+
+        <div class="title-container" id="titleContainer">
+            <object id="animatedTitle" type="image/svg+xml" data="silent_disco.svg"></object>
+        </div>
+
+        <div class="content">
+            <h1 id="overlaytext">Tap the menu to choose a stream</h1>
+        </div>
+
+        <div class="player-info" id="playerInfo">
+            <p id="nowPlaying">Now Playing: Stream 1</p>
+        </div>
+
+        <!-- Hidden audio player -->
+        <audio id="audioPlayer" preload="none"></audio>
+    </div>
+
+    <script>
+        // ========== CONFIGURATION ==========
+        // Replace this with your Icecast server URL
+        const ICECAST_SERVER = 'http://INSERT IPV4 ADDRESS HERE:8000';
+        
+        // Map track names to your Icecast mount points
+        const STREAM_MOUNTS = {
+            'track1': 'track1',  // Change these to match your Liquidsoap mount names
+            'track2': 'track2',
+            'track3': 'track3',
+            'track4': 'track4',
+            'track5': 'track5'
+        };
+        // ===================================
+
+        const hamburger = document.getElementById('hamburger');
+        const menu = document.getElementById('menu');
+        const overlay = document.getElementById('overlay');
+        const content = document.getElementById('overlaytext');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playerInfo = document.getElementById('playerInfo');
+        const nowPlaying = document.getElementById('nowPlaying');
+        
+        let currentButton = null;
+
+        function toggleMenu() {
+            hamburger.classList.toggle('active');
+            menu.classList.toggle('active');
+            overlay.classList.toggle('active');
+            content.classList.add('active');
+        }
+
+        hamburger.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
+
+        function playStream(trackName, color, button) {
+        // Build the stream URL with .mp3 extension
+        const mountPoint = STREAM_MOUNTS[trackName];
+        const streamUrl = `${ICECAST_SERVER}/${mountPoint}.mp3`;
+        
+        console.log('Attempting to play:', streamUrl);  // Debug line
+        
+        // If already playing this track, just change color and close menu
+        if (audioPlayer.src === streamUrl && !audioPlayer.paused) {
+            document.body.style.backgroundColor = color;
+            toggleMenu();
+            return;
+        }
+        
+        // Stop current stream
+        audioPlayer.pause();
+        
+        // Reset previous button
+        if (currentButton) {
+            currentButton.classList.remove('playing');
+        }
+        
+        // Set new source and play
+        audioPlayer.src = streamUrl;
+        audioPlayer.load();
+        
+        audioPlayer.play().then(() => {
+            // Update UI
+            button.classList.add('playing');
+            currentButton = button;
+            
+            // Update now playing text
+            const streamNumber = trackName.replace('track', '');
+            nowPlaying.textContent = `Now Playing: Stream ${streamNumber}`;
+            playerInfo.classList.add('active');
+            
+            // Change background color
+            document.body.style.backgroundColor = color;
+            
+            // Close menu
+            toggleMenu();
+        }).catch(error => {
+            console.error('Error playing stream:', error);
+            alert('Could not connect to stream: ' + error.message + '. URL: ' + streamUrl);
+        });
+    }
+
+        function stopStream() {
+            audioPlayer.pause();
+            audioPlayer.src = '';
+            
+            if (currentButton) {
+                currentButton.classList.remove('playing');
+                currentButton = null;
+            }
+            
+            playerInfo.classList.remove('active');
+            
+            // Reset to default color
+            document.body.style.backgroundColor = '#6366f1';
+        }
+
+        // Handle audio errors
+        audioPlayer.addEventListener('error', (e) => {
+            console.error('Audio player error:', e);
+            alert('Stream connection error. Please check your server configuration.');
+            if (currentButton) {
+                currentButton.classList.remove('playing');
+                currentButton = null;
+            }
+            playerInfo.classList.remove('active');
+        });
+
+        // Set initial volume
+        audioPlayer.volume = 0.8;
+
+        // Animated title - handwritten calligraphy effect
+        document.addEventListener('DOMContentLoaded', function() {
+            const svgObject = document.getElementById('animatedTitle');
+
+            svgObject.addEventListener('load', function() {
+                const svgDoc = svgObject.contentDocument;
+                const paths = svgDoc.querySelectorAll('path');
+
+                // Prepare each path for animation
+                paths.forEach(path => {
+                    const length = path.getTotalLength();
+                    path.style.strokeDasharray = length;
+                    path.style.strokeDashoffset = length;
+                    path.style.fill = 'transparent';
+                    path.style.stroke = path.getAttribute('fill') || '#ffffff';
+                    path.style.strokeWidth = '2';
+                });
+
+                // Animate with GSAP
+                gsap.to(paths, {
+                    strokeDashoffset: 0,
+                    duration: 3,
+                    ease: 'power2.inOut',
+                    stagger: {
+                        each: 0.002,
+                        from: 'start'
+                    },
+                    onComplete: function() {
+                        // After drawing completes, fade in the fill
+                        paths.forEach(path => {
+                            const originalFill = path.getAttribute('fill') || '#ffffff';
+                            gsap.to(path, {
+                                fill: originalFill,
+                                stroke: 'transparent',
+                                duration: 0.5,
+                                ease: 'power1.inOut'
+                            });
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
