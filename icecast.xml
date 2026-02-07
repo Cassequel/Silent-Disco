@@ -256,7 +256,7 @@
     -->
 
     <paths>
-        <logdir>C:\Users\apier\OneDrive\Documents\Code\Personal\Disco\icecast_logs</logdir>
+        <logdir>REPLACE WITH YOUR OWN FOLDER FILE PATH</logdir>
         <webroot>./web</webroot>
         <adminroot>./admin</adminroot>
         <reportxmldb>./report-db.xml</reportxmldb>
